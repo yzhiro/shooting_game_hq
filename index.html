@@ -241,7 +241,7 @@
         );
       }
       function tryActivateBarrier() {
-        if (!gameState.barrier && Math.random() < 1 / 150) {
+        if (!gameState.barrier && Math.random() < 1 / 100) {
           gameState.barrier = true;
           $("#barrier")
             .removeClass("hidden")
