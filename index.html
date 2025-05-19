@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>グラディウス風ゲーム</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
@@ -40,7 +40,15 @@
     }
   </style>
 </head>
-<body class="m-0 p-0 overflow-hidden bg-black">
+<body class="m-0 p-0 overflow-hidden bg-black" ontouchstart="">
+
+  <!-- iPhoneのピンチズーム対策 -->
+  <script>
+    document.addEventListener("gesturestart", function (e) {
+      e.preventDefault();
+    });
+  </script>
+
   <audio id="bgm" src="bgm/02 Start ~ Main BGM Lv 0.mp3" loop></audio>
 
   <!-- スコア・ライフ・コンボ表示 -->
@@ -62,7 +70,7 @@
   <!-- ゲームエリア -->
   <div id="gameArea" class="relative w-screen h-screen bg-space overflow-hidden">
     <img id="player" src="img/player.png" class="absolute w-12 h-12 transition-transform duration-100 mix-blend-screen opacity-90" />
-    
+
     <!-- 🛡バリア表示 -->
     <div id="barrier" class="absolute w-20 h-20 rounded-full border-4 border-blue-400 opacity-70 hidden z-[80] pointer-events-none"></div>
 
@@ -83,8 +91,6 @@
   <!-- 効果音 -->
   <audio id="shotSound" src="bgm/se_zushuun3.mp3"></audio>
   <audio id="hitSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
-
-<!-- 🔽 続き（第2分割）へ -->
 <script>
   const gameArea = $("#gameArea");
   const player = $("#player");
@@ -190,7 +196,7 @@
     }
   });
 
-  // 📱 タッチ操作（仮想パッド & ボタン）
+  // 📱 タッチ操作：仮想パッド（1回だけバインド）
   $(function () {
     let touchMoveX = 0;
     let touchMoveY = 0;
@@ -211,8 +217,6 @@
     });
 
     $("#leftStickArea").on("touchend", function () {
-      touchMoveX = 0;
-      touchMoveY = 0;
       gameState.keys["ArrowUp"] = false;
       gameState.keys["ArrowDown"] = false;
       gameState.keys["ArrowLeft"] = false;
@@ -229,7 +233,6 @@
       }
     });
   });
-
 </script>
 <script>
   function startGameWithDifficulty(level) {
@@ -331,12 +334,13 @@
             addComboScore();
             scoreDisplay.text(`スコア: ${gameState.score}`);
             gameState.defeatedEnemies++;
-            tryActivateBarrier(); // バリア発動チャンス
+            tryActivateBarrier();
             break;
           }
         }
       }
 
+      // 敵弾の処理（続きは次の第4分割）
       // 敵弾処理
       for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
         const bullet = gameState.enemyBullets[i];
@@ -366,7 +370,6 @@
         }
       }
 
-      // 🔽 次（第4分割）へ続きます
       // ボス弾（ホーミング）処理
       for (let i = gameState.bossBullets.length - 1; i >= 0; i--) {
         const bullet = gameState.bossBullets[i];
