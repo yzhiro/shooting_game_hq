@@ -1,550 +1,527 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <title>グラディウス風ゲーム</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <style>
-    .bg-space {
-      background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
-      background-size: cover;
-      animation: scrollBg 20s linear infinite;
-    }
-    @keyframes scrollBg {
-      from {
-        background-position: 0 0;
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gradius-style Game</title>
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      .bg-space {
+        background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
+        background-size: cover;
+        animation: scrollBg 20s linear infinite;
       }
-      to {
-        background-position: -1000px 0;
+      @keyframes scrollBg {
+        from {
+          background-position: 0 0;
+        }
+        to {
+          background-position: -1000px 0;
+        }
       }
-    }
-    #barrier {
-      transition: opacity 0.3s ease;
-    }
-    #leftStickArea::before {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 40px;
-      height: 40px;
-      transform: translate(-50%, -50%);
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-    }
-    #shotButton:active {
-      background-color: rgba(255, 80, 80, 0.8);
-      transform: scale(1.1);
-    }
-  </style>
-</head>
-<body class="m-0 p-0 overflow-hidden bg-black" ontouchstart="">
+      #barrier {
+        transition: opacity 0.3s ease;
+      }
+      #leftStickArea::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 40px;
+        height: 40px;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+      }
+      #shotButton:active {
+        background: rgba(255, 80, 80, 0.8);
+        transform: scale(1.1);
+      }
+    </style>
+  </head>
+  <body class="m-0 p-0 overflow-hidden bg-black" ontouchstart="">
+    <script>
+      document.addEventListener("gesturestart", (e) => e.preventDefault());
+    </script>
 
-  <!-- iPhoneのピンチズーム対策 -->
-  <script>
-    document.addEventListener("gesturestart", function (e) {
-      e.preventDefault();
-    });
-  </script>
+    <!-- BGM -->
+    <audio id="bgm" src="bgm/02 Start ~ Main BGM Lv 0.mp3" loop></audio>
 
-  <audio id="bgm" src="bgm/02 Start ~ Main BGM Lv 0.mp3" loop></audio>
-
-  <!-- スコア・ライフ・コンボ表示 -->
-  <div class="absolute top-4 left-4 text-white text-xl z-[999] pointer-events-none select-none">
-    <div id="score">スコア: 0</div>
-    <div id="life" class="mt-2">❤️❤️❤️</div>
-    <div id="combo" class="mt-2 text-sm text-yellow-300"></div>
-  </div>
-
-  <!-- スタート画面 -->
-  <div id="startScreen" class="fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-50">
-    <h1 class="text-4xl font-bold mb-6">グラディウス風ゲーム</h1>
-    <p class="mb-4">難易度を選んでください：</p>
-    <button class="bg-green-500 px-6 py-2 rounded mb-2" onclick="startGameWithDifficulty('easy')">Easy</button>
-    <button class="bg-yellow-500 px-6 py-2 rounded mb-2" onclick="startGameWithDifficulty('normal')">Normal</button>
-    <button class="bg-red-500 px-6 py-2 rounded" onclick="startGameWithDifficulty('hard')">Hard</button>
-  </div>
-
-  <!-- ゲームエリア -->
-  <div id="gameArea" class="relative w-screen h-screen bg-space overflow-hidden">
-    <img id="player" src="img/player.png" class="absolute w-12 h-12 transition-transform duration-100 mix-blend-screen opacity-90" />
-
-    <!-- 🛡バリア表示 -->
-    <div id="barrier" class="absolute w-20 h-20 rounded-full border-4 border-blue-400 opacity-70 hidden z-[80] pointer-events-none"></div>
-
-    <!-- 📱仮想パッド -->
-    <div id="virtualControls" class="fixed inset-0 z-[100] pointer-events-none">
-      <div id="leftStickArea" class="absolute bottom-4 left-4 w-32 h-32 bg-white bg-opacity-10 rounded-full pointer-events-auto"></div>
-      <div id="shotButton" class="absolute bottom-4 right-4 w-20 h-20 bg-red-500 bg-opacity-60 rounded-full flex items-center justify-center text-white text-xl font-bold pointer-events-auto select-none">🔫</div>
+    <!-- 固定UI -->
+    <div
+      class="absolute top-4 left-4 text-white text-xl z-[999] pointer-events-none select-none"
+    >
+      <div id="score">Score: 0</div>
+      <div id="life" class="mt-2">❤️❤️❤️</div>
+      <div id="combo" class="mt-2 text-sm text-yellow-300"></div>
     </div>
-  </div>
 
-  <!-- ゲームオーバー画面 -->
-  <div id="gameOverScreen" class="hidden fixed inset-0 bg-black bg-opacity-80 text-white flex flex-col items-center justify-center z-50">
-    <h1 class="text-3xl font-bold mb-4">ゲームオーバー！</h1>
-    <div id="ranking" class="mb-6 text-left"></div>
-    <button id="restartButton" class="bg-white text-black font-bold py-2 px-4 rounded">もう一度プレイ</button>
-  </div>
+    <!-- スタート画面 -->
+    <div
+      id="startScreen"
+      class="fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-50"
+    >
+      <h1 class="text-4xl font-bold mb-6">Gradius-style Game</h1>
+      <p class="text-lg">Press Any Key to Start</p>
+    </div>
+    <!-- ゲームエリア -->
+    <div
+      id="gameArea"
+      class="relative w-screen h-screen bg-space overflow-hidden"
+    >
+      <img
+        id="player"
+        src="img/player.png"
+        class="absolute w-12 h-12 mix-blend-screen opacity-90"
+      />
+      <div
+        id="barrier"
+        class="absolute w-20 h-20 rounded-full border-4 border-blue-400 opacity-70 hidden z-[80] pointer-events-none"
+      ></div>
 
-  <!-- 効果音 -->
-  <audio id="shotSound" src="bgm/se_zushuun3.mp3"></audio>
-  <audio id="hitSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
-<script>
-  const gameArea = $("#gameArea");
-  const player = $("#player");
-  const scoreDisplay = $("#score");
-  const lifeDisplay = $("#life");
-  const comboDisplay = $("#combo");
-  const shotSound = $("#shotSound")[0];
-  const hitSound = $("#hitSound")[0];
-  const bgm = document.getElementById("bgm");
-  let bgmStarted = false;
+      <!-- 仮想パッド -->
+      <div
+        id="virtualControls"
+        class="fixed inset-0 z-[100] pointer-events-none"
+      >
+        <div
+          id="leftStickArea"
+          class="absolute bottom-4 left-4 w-32 h-32 bg-white bg-opacity-10 rounded-full pointer-events-auto"
+        ></div>
+        <div
+          id="shotButton"
+          class="absolute bottom-4 right-4 w-20 h-20 bg-red-500 bg-opacity-60 rounded-full flex items-center justify-center text-white text-xl font-bold pointer-events-auto select-none"
+        >
+          🔫
+        </div>
+      </div>
+    </div>
 
-  let animationFrameId;
-  let enemySpawnInterval;
-  let bossFireInterval;
-  let gameState;
+    <!-- ゲームオーバー -->
+    <div
+      id="gameOverScreen"
+      class="hidden fixed inset-0 bg-black bg-opacity-80 text-white flex flex-col items-center justify-center z-50"
+    >
+      <h1 class="text-3xl font-bold mb-4">Game Over!</h1>
+      <div id="ranking" class="mb-6 text-left"></div>
+      <button
+        id="restartButton"
+        class="bg-white text-black font-bold py-2 px-4 rounded"
+      >
+        Play Again
+      </button>
+    </div>
 
-  document.addEventListener("keydown", (e) => {
-    if (!bgmStarted) {
-      bgm.volume = 0.6;
-      bgm.play();
-      bgmStarted = true;
-    }
-  });
+    <!-- 効果音 -->
+    <audio id="shotSound" src="bgm/se_zushuun3.mp3"></audio>
+    <audio
+      id="hitSound"
+      src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"
+    ></audio>
 
-  function initializeGameState() {
-    gameState = {
-      playerX: 100,
-      playerY: window.innerHeight / 2,
-      playerSpeed: 5,
-      bulletSpeed: 10,
-      enemySpeed: 2,
-      score: 0,
-      life: 3,
-      isGameOver: false,
-      bullets: [],
-      enemies: [],
-      enemyBullets: [],
-      bossBullets: [],
-      keys: {},
-      defeatedEnemies: 0,
-      bossActive: false,
-      boss: null,
-      bossHp: 30,
-      canShoot: true,
-      combo: 0,
-      comboTimer: null,
-      barrier: false
-    };
-  }
+    <script>
+      /* ======== グローバル ======== */
+      const gameArea = $("#gameArea"),
+        player = $("#player"),
+        scoreDisplay = $("#score"),
+        lifeDisplay = $("#life"),
+        comboDisplay = $("#combo");
+      const shotSound = $("#shotSound")[0],
+        hitSound = $("#hitSound")[0],
+        bgm = document.getElementById("bgm");
+      let bgmStarted = false,
+        animationFrameId,
+        enemySpawnInterval,
+        bossFireInterval,
+        gameState;
 
-  function tryActivateBarrier() {
-    if (!gameState.barrier && Math.random() < 1 / 150) {
-      gameState.barrier = true;
-      $("#barrier").removeClass("hidden");
-      $("#barrier").css({
-        left: gameState.playerX - 12,
-        top: gameState.playerY - 12,
+      $(document).on("keydown", () => {
+        if (!bgmStarted) {
+          bgm.volume = 0.6;
+          bgm.play();
+          bgmStarted = true;
+          $("#startScreen").addClass("hidden");
+          initializeGameState();
+          startGame();
+        }
       });
-    }
-  }
-
-  function updatePlayer() {
-    const { keys, playerSpeed } = gameState;
-    if (keys["ArrowUp"] || keys["w"]) gameState.playerY -= playerSpeed;
-    if (keys["ArrowDown"] || keys["s"]) gameState.playerY += playerSpeed;
-    if (keys["ArrowLeft"] || keys["a"]) gameState.playerX -= playerSpeed;
-    if (keys["ArrowRight"] || keys["d"]) gameState.playerX += playerSpeed;
-
-    gameState.playerX = Math.max(0, Math.min(window.innerWidth - 48, gameState.playerX));
-    gameState.playerY = Math.max(0, Math.min(window.innerHeight - 48, gameState.playerY));
-
-    player.css({ left: gameState.playerX, top: gameState.playerY });
-
-    if (gameState.barrier) {
-      $("#barrier").css({
-        left: gameState.playerX - 12,
-        top: gameState.playerY - 12,
+      function initializeGameState() {
+        gameState = {
+          playerX: 100,
+          playerY: innerHeight / 2,
+          playerSpeed: 5,
+          bulletSpeed: 10,
+          enemySpeed: 3,
+          score: 0,
+          life: 3,
+          isGameOver: false,
+          bullets: [],
+          enemies: [],
+          enemyBullets: [],
+          bossBullets: [],
+          keys: {},
+          defeatedEnemies: 0,
+          bossActive: false,
+          boss: null,
+          bossHp: 30,
+          canShoot: true,
+          combo: 0,
+          comboTimer: null,
+          barrier: false,
+        };
+      }
+      function removeBarrier() {
+        gameState.barrier = false;
+        $("#barrier").addClass("hidden");
+      }
+      /* ======== 入力・ショット ======== */
+      function shoot3Way(x, y) {
+        [0, -2, 2].forEach((dy) => {
+          const b = $("<div>")
+            .addClass("absolute w-2 h-1 bg-yellow-300")
+            .css({ left: x + 50, top: y + 20 })
+            .data("dy", dy);
+          gameArea.append(b);
+          gameState.bullets.push(b);
+        });
+      }
+      $(document).keydown((e) => (gameState.keys[e.key] = true));
+      $(document).keyup((e) => (gameState.keys[e.key] = false));
+      $(document).keydown((e) => {
+        if (e.key === " " && gameState.canShoot && !gameState.isGameOver) {
+          gameState.canShoot = false;
+          shoot3Way(gameState.playerX, gameState.playerY);
+          shotSound.currentTime = 0;
+          shotSound.play();
+          setTimeout(() => (gameState.canShoot = true), 200);
+        }
       });
-    }
-  }
 
-  function shoot3Way(x, y) {
-    const dirs = [0, -2, 2];
-    dirs.forEach((dy) => {
-      const bullet = $("<div>").addClass("absolute w-2 h-1 bg-yellow-300");
-      bullet.css({ left: x + 50, top: y + 20 });
-      bullet.data("dy", dy);
-      gameArea.append(bullet);
-      gameState.bullets.push(bullet);
-    });
-  }
+      /* 仮想パッド */
+      $(function () {
+        $("#leftStickArea").on("touchstart touchmove", (e) => {
+          const t = e.originalEvent.touches[0],
+            c = $(e.currentTarget).offset(),
+            dx = t.pageX - (c.left + 64),
+            dy = t.pageY - (c.top + 64),
+            th = 10;
+          gameState.keys["ArrowUp"] = dy < -th;
+          gameState.keys["ArrowDown"] = dy > th;
+          gameState.keys["ArrowLeft"] = dx < -th;
+          gameState.keys["ArrowRight"] = dx > th;
+        });
+        $("#leftStickArea").on("touchend", () => {
+          gameState.keys = {};
+        });
+        $("#shotButton").on("touchstart", () => {
+          if (gameState.canShoot && !gameState.isGameOver) {
+            gameState.canShoot = false;
+            shoot3Way(gameState.playerX, gameState.playerY);
+            shotSound.currentTime = 0;
+            shotSound.play();
+            setTimeout(() => (gameState.canShoot = true), 200);
+          }
+        });
+      });
 
-  $(document).keydown((e) => (gameState.keys[e.key] = true));
-  $(document).keyup((e) => (gameState.keys[e.key] = false));
-
-  $(document).keydown((e) => {
-    if (e.key === " " && gameState.canShoot && !gameState.isGameOver) {
-      gameState.canShoot = false;
-      shoot3Way(gameState.playerX, gameState.playerY);
-      shotSound.currentTime = 0;
-      shotSound.play();
-      setTimeout(() => (gameState.canShoot = true), 200);
-    }
-  });
-
-  // 📱 タッチ操作：仮想パッド（1回だけバインド）
-  $(function () {
-    let touchMoveX = 0;
-    let touchMoveY = 0;
-
-    $("#leftStickArea").on("touchstart touchmove", function (e) {
-      const touch = e.originalEvent.touches[0];
-      const center = $(this).offset();
-      const dx = touch.pageX - (center.left + 64);
-      const dy = touch.pageY - (center.top + 64);
-      touchMoveX = dx;
-      touchMoveY = dy;
-
-      const threshold = 10;
-      gameState.keys["ArrowUp"] = dy < -threshold;
-      gameState.keys["ArrowDown"] = dy > threshold;
-      gameState.keys["ArrowLeft"] = dx < -threshold;
-      gameState.keys["ArrowRight"] = dx > threshold;
-    });
-
-    $("#leftStickArea").on("touchend", function () {
-      gameState.keys["ArrowUp"] = false;
-      gameState.keys["ArrowDown"] = false;
-      gameState.keys["ArrowLeft"] = false;
-      gameState.keys["ArrowRight"] = false;
-    });
-
-    $("#shotButton").on("touchstart", function () {
-      if (gameState.canShoot && !gameState.isGameOver) {
-        gameState.canShoot = false;
-        shoot3Way(gameState.playerX, gameState.playerY);
-        shotSound.currentTime = 0;
-        shotSound.play();
-        setTimeout(() => (gameState.canShoot = true), 200);
+      /* ======== 衝突判定 & バリア ======== */
+      function isColliding($a, $b) {
+        if (!$a?.length || !$b?.length) return false;
+        const a = $a[0].getBoundingClientRect(),
+          b = $b[0].getBoundingClientRect();
+        return (
+          a.left < b.right &&
+          a.right > b.left &&
+          a.top < b.bottom &&
+          a.bottom > b.top
+        );
       }
-    });
-  });
-</script>
-<script>
-  function startGameWithDifficulty(level) {
-    const config = {
-      easy: { enemySpeed: 2, bulletSpeed: 11 },
-      normal: { enemySpeed: 3, bulletSpeed: 10 },
-      hard: { enemySpeed: 4, bulletSpeed: 9 },
-    };
-    initializeGameState();
-    Object.assign(gameState, config[level]);
-    document.getElementById("startScreen").classList.add("hidden");
-    startGame();
-  }
-
-  function addComboScore() {
-    gameState.combo++;
-    const bonus = 100 + (gameState.combo - 1) * 20;
-    gameState.score += bonus;
-    comboDisplay.text(`コンボ: ${gameState.combo} HIT!`);
-
-    if (gameState.comboTimer) clearTimeout(gameState.comboTimer);
-    gameState.comboTimer = setTimeout(() => {
-      gameState.combo = 0;
-      comboDisplay.text("");
-    }, 2000);
-  }
-
-  function startGame() {
-    player.css({ left: gameState.playerX, top: gameState.playerY });
-    lifeDisplay.text("❤️".repeat(gameState.life));
-    scoreDisplay.text(`スコア: ${gameState.score}`);
-    comboDisplay.text("");
-
-    let spawnCount = 0;
-    enemySpawnInterval = setInterval(() => {
-      if (gameState.isGameOver || gameState.bossActive) return;
-      spawnCount++;
-      if (spawnCount % 5 === 0) {
-        spawnFormation();
-      } else {
-        spawnSingleEnemy();
-      }
-    }, 300);
-
-    function loop() {
-      if (gameState.isGameOver) return;
-      if (!gameState.bossActive && gameState.defeatedEnemies >= 50)
-        spawnBoss();
-      updatePlayer();
-
-      // プレイヤーの弾移動
-      for (let i = gameState.bullets.length - 1; i >= 0; i--) {
-        const bullet = gameState.bullets[i];
-        let x = bullet.position().left + gameState.bulletSpeed;
-        let y = bullet.position().top + bullet.data("dy");
-        bullet.css({ left: x, top: y });
-        if (x > window.innerWidth || y < 0 || y > window.innerHeight) {
-          bullet.remove();
-          gameState.bullets.splice(i, 1);
+      function tryActivateBarrier() {
+        if (!gameState.barrier && Math.random() < 1 / 150) {
+          gameState.barrier = true;
+          $("#barrier")
+            .removeClass("hidden")
+            .css({ left: gameState.playerX - 12, top: gameState.playerY - 12 });
         }
       }
 
-      // 敵の移動と当たり判定
-      for (let i = gameState.enemies.length - 1; i >= 0; i--) {
-        const enemy = gameState.enemies[i];
-        let x = enemy.position().left - gameState.enemySpeed;
-        enemy.css("left", x);
+      /* ======== 敵生成（Lv1~3 ランダム） ======== */
+      function spawnSmartEnemy() {
+        const enemy = $("<img>")
+            .attr("src", "img/enemy.png")
+            .addClass("absolute w-10 h-10 mix-blend-screen opacity-90"),
+          aiType = Math.floor(Math.random() * 3) + 1,
+          startTop = Math.random() * (innerHeight - 60);
+        enemy.css({ left: innerWidth, top: startTop });
+        gameArea.append(enemy);
+        gameState.enemies.push(enemy);
 
-        if (x < -40) {
-          enemy.remove();
-          gameState.enemies.splice(i, 1);
-          continue;
-        }
+        /* 敵弾 */
+        setTimeout(() => {
+          if (!gameState.isGameOver && enemy.parent().length) {
+            const eb = $("<div>")
+              .addClass("absolute w-2 h-1 bg-pink-400")
+              .css({
+                left: enemy.position().left,
+                top: enemy.position().top + 20,
+              });
+            gameArea.append(eb);
+            gameState.enemyBullets.push(eb);
+          }
+        }, 300);
 
-        if (isColliding(player, enemy)) {
-          if (gameState.barrier) {
-            gameState.barrier = false;
-            $("#barrier").addClass("hidden");
-            enemy.remove();
+        let offset = 0,
+          dir = 1;
+        const mv = setInterval(() => {
+          if (gameState.isGameOver || !enemy.parent().length) {
+            clearInterval(mv);
+            return;
+          }
+          let left = enemy.position().left - gameState.enemySpeed,
+            top = enemy.position().top;
+          if (aiType === 1) {
+            offset += dir;
+            if (offset > 20 || offset < -20) dir *= -1;
+            top = startTop + offset;
+          } else if (aiType === 2) {
+            top += gameState.playerY < top ? -1.5 : 1.5;
+          } else {
+            const danger = gameState.bullets.some(
+              (b) =>
+                Math.abs(b.position().left - left) < 100 &&
+                Math.abs(b.position().top - top) < 30
+            );
+            if (danger) top += top > 10 ? -2 : 2;
+          }
+          enemy.css({ left, left, top });
+        }, 50);
+      }
+      /* ======== プレイヤー更新 ======== */
+      function updatePlayer() {
+        const k = gameState.keys,
+          s = gameState.playerSpeed;
+        if (k["ArrowUp"] || k.w) gameState.playerY -= s;
+        if (k["ArrowDown"] || k.s) gameState.playerY += s;
+        if (k["ArrowLeft"] || k.a) gameState.playerX -= s;
+        if (k["ArrowRight"] || k.d) gameState.playerX += s;
+        gameState.playerX = Math.max(
+          0,
+          Math.min(innerWidth - 48, gameState.playerX)
+        );
+        gameState.playerY = Math.max(
+          0,
+          Math.min(innerHeight - 48, gameState.playerY)
+        );
+        player.css({ left: gameState.playerX, top: gameState.playerY });
+        if (gameState.barrier)
+          $("#barrier").css({
+            left: gameState.playerX - 12,
+            top: gameState.playerY - 12,
+          });
+      }
+
+      /* ======== メイン開始 ======== */
+      function startGame() {
+        player.css({ left: gameState.playerX, top: gameState.playerY });
+        lifeDisplay.text("❤️".repeat(gameState.life));
+        scoreDisplay.text("Score: 0");
+        comboDisplay.text("");
+        enemySpawnInterval = setInterval(() => {
+          if (!gameState.isGameOver && !gameState.bossActive) spawnSmartEnemy();
+        }, 400);
+
+        const loop = () => {
+          if (gameState.isGameOver) return;
+          updatePlayer();
+          if (!gameState.bossActive && gameState.defeatedEnemies >= 50)
+            spawnBoss();
+
+          /* 自機弾 */
+          for (let i = gameState.bullets.length - 1; i >= 0; i--) {
+            const b = gameState.bullets[i],
+              x = b.position().left + gameState.bulletSpeed,
+              y = b.position().top + b.data("dy");
+            b.css({ left: x, top: y });
+            if (x > innerWidth || y < 0 || y > innerHeight) {
+              b.remove();
+              gameState.bullets.splice(i, 1);
+            }
+          }
+
+          /* 敵・弾・ボス弾 処理（バリア統一） */
+          processEnemies();
+          processEnemyBullets();
+          processBossBullets();
+          processBossHit();
+          animationFrameId = requestAnimationFrame(loop);
+        };
+        loop();
+      }
+
+      /* ======== 処理関数 ======== */
+      function processEnemies() {
+        for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+          const e = gameState.enemies[i];
+          if (!e.parent().length) {
             gameState.enemies.splice(i, 1);
             continue;
           }
-          enemy.remove();
-          gameState.enemies.splice(i, 1);
-          hitSound.play();
-          gameState.life--;
-          lifeDisplay.text("❤️".repeat(gameState.life));
-          if (gameState.life <= 0) return gameOver();
-          continue;
-        }
-
-        for (let j = gameState.bullets.length - 1; j >= 0; j--) {
-          const bullet = gameState.bullets[j];
-          if (isColliding(bullet, enemy)) {
-            bullet.remove();
-            enemy.remove();
-            gameState.bullets.splice(j, 1);
+          if (isColliding(player, e)) {
+            gameState.barrier ? removeBarrier() : damagePlayer();
+            e.remove();
             gameState.enemies.splice(i, 1);
-            addComboScore();
-            scoreDisplay.text(`スコア: ${gameState.score}`);
-            gameState.defeatedEnemies++;
-            tryActivateBarrier();
-            break;
-          }
-        }
-      }
-
-      // 敵弾の処理（続きは次の第4分割）
-      // 敵弾処理
-      for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
-        const bullet = gameState.enemyBullets[i];
-        const x = bullet.position().left - 6;
-        bullet.css("left", x);
-
-        if (isColliding(player, bullet)) {
-          if (gameState.barrier) {
-            gameState.barrier = false;
-            $("#barrier").addClass("hidden");
-            bullet.remove();
-            gameState.enemyBullets.splice(i, 1);
             continue;
           }
-          bullet.remove();
-          gameState.enemyBullets.splice(i, 1);
-          hitSound.play();
-          gameState.life--;
-          lifeDisplay.text("❤️".repeat(gameState.life));
-          if (gameState.life <= 0) return gameOver();
-          continue;
-        }
-
-        if (x < -10) {
-          bullet.remove();
-          gameState.enemyBullets.splice(i, 1);
-        }
-      }
-
-      // ボス弾（ホーミング）処理
-      for (let i = gameState.bossBullets.length - 1; i >= 0; i--) {
-        const bullet = gameState.bossBullets[i];
-        const x = bullet.position().left + bullet.data("vx");
-        const y = bullet.position().top + bullet.data("vy");
-        bullet.css({ left: x, top: y });
-
-        if (isColliding(player, bullet)) {
-          if (gameState.barrier) {
-            gameState.barrier = false;
-            $("#barrier").addClass("hidden");
-            bullet.remove();
-            gameState.bossBullets.splice(i, 1);
-            continue;
-          }
-          bullet.remove();
-          gameState.bossBullets.splice(i, 1);
-          hitSound.play();
-          gameState.life--;
-          lifeDisplay.text("❤️".repeat(gameState.life));
-          if (gameState.life <= 0) return gameOver();
-          continue;
-        }
-
-        if (x < -10 || y < 0 || y > window.innerHeight) {
-          bullet.remove();
-          gameState.bossBullets.splice(i, 1);
-        }
-      }
-
-      // プレイヤーの弾とボスの当たり判定
-      if (gameState.boss && gameState.bossActive) {
-        for (let i = gameState.bullets.length - 1; i >= 0; i--) {
-          const bullet = gameState.bullets[i];
-          if (isColliding(bullet, gameState.boss)) {
-            bullet.remove();
-            gameState.bullets.splice(i, 1);
-            gameState.bossHp--;
-            if (gameState.bossHp <= 0) {
-              clearInterval(bossFireInterval);
-              gameState.boss.remove();
-              gameState.boss = null;
-              gameState.bossActive = false;
-              gameState.defeatedEnemies = 0;
-              gameState.score += 10000;
-              scoreDisplay.text(`スコア: ${gameState.score}`);
+          for (let j = gameState.bullets.length - 1; j >= 0; j--) {
+            const b = gameState.bullets[j];
+            if (isColliding(b, e)) {
+              b.remove();
+              gameState.bullets.splice(j, 1);
+              e.remove();
+              gameState.enemies.splice(i, 1);
+              gameState.defeatedEnemies++;
+              tryActivateBarrier();
+              addComboScore();
+              scoreDisplay.text(`Score: ${gameState.score}`);
+              break;
             }
           }
         }
       }
-
-      animationFrameId = requestAnimationFrame(loop);
-    }
-
-    loop();
-  }
-
-  function spawnSingleEnemy() {
-    const enemy = $("<img>")
-      .attr("src", "img/enemy.png")
-      .addClass("absolute w-10 h-10 mix-blend-screen opacity-90");
-    const top = Math.random() * (window.innerHeight - 30);
-    enemy.css({ left: window.innerWidth, top: top });
-    gameArea.append(enemy);
-    gameState.enemies.push(enemy);
-
-    setTimeout(() => {
-      if (!gameState.isGameOver && enemy.parent().length > 0) {
-        const bullet = $("<div>").addClass("absolute w-2 h-1 bg-pink-400");
-        bullet.css({
-          left: enemy.position().left,
-          top: enemy.position().top + 20,
-        });
-        gameArea.append(bullet);
-        gameState.enemyBullets.push(bullet);
+      function processEnemyBullets() {
+        for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
+          const b = gameState.enemyBullets[i],
+            x = b.position().left - 6;
+          b.css("left", x);
+          if (isColliding(player, b)) {
+            gameState.barrier ? removeBarrier() : damagePlayer();
+            b.remove();
+            gameState.enemyBullets.splice(i, 1);
+            continue;
+          }
+          if (x < -10) {
+            b.remove();
+            gameState.enemyBullets.splice(i, 1);
+          }
+        }
       }
-    }, 300);
-  }
+      function processBossBullets() {
+        for (let i = gameState.bossBullets.length - 1; i >= 0; i--) {
+          const b = gameState.bossBullets[i],
+            x = b.position().left + b.data("vx"),
+            y = b.position().top + b.data("vy");
+          b.css({ left: x, top: y });
+          if (isColliding(player, b)) {
+            gameState.barrier ? removeBarrier() : damagePlayer();
+            b.remove();
+            gameState.bossBullets.splice(i, 1);
+            continue;
+          }
+          if (x < -10 || y < 0 || y > innerHeight) {
+            b.remove();
+            gameState.bossBullets.splice(i, 1);
+          }
+        }
+      }
+      function processBossHit() {
+        if (!gameState.bossActive) return;
+        for (let i = gameState.bullets.length - 1; i >= 0; i--) {
+          const b = gameState.bullets[i];
+          if (isColliding(b, gameState.boss)) {
+            b.remove();
+            gameState.bullets.splice(i, 1);
+            if (--gameState.bossHp <= 0) {
+              clearInterval(bossFireInterval);
+              gameState.boss.remove();
+              gameState.bossActive = false;
+              gameState.boss = null;
+              gameState.defeatedEnemies = 0;
+              gameState.score += 10000;
+              scoreDisplay.text(`Score: ${gameState.score}`);
+            }
+          }
+        }
+      }
+      function damagePlayer() {
+        hitSound.play();
+        if (--gameState.life <= 0) return gameOver();
+        lifeDisplay.text("❤️".repeat(gameState.life));
+      }
+      /* ======== ボス生成 & ホーミング弾 ======== */
+      function spawnBoss() {
+        const boss = $("<img>")
+          .attr("src", "img/boss.png")
+          .addClass("absolute w-32 h-32 mix-blend-screen opacity-90")
+          .css({ left: innerWidth - 120, top: innerHeight / 2 - 64 });
+        gameArea.append(boss);
+        gameState.boss = boss;
+        gameState.bossActive = true;
+        gameState.bossHp = 30;
+        bossFireInterval = setInterval(() => {
+          if (!gameState.bossActive) return clearInterval(bossFireInterval);
+          const fx = boss.position().left,
+            fy = boss.position().top + 30;
+          for (let i = 0; i < 5; i++) {
+            const b = $("<div>")
+              .addClass("absolute w-2 h-1 bg-purple-400")
+              .css({ left: fx, top: fy });
+            const dx = gameState.playerX - fx,
+              dy = gameState.playerY - fy,
+              len = Math.hypot(dx, dy) || 1;
+            b.data("vx", (dx / len) * 4 + (Math.random() - 0.5) * 2).data(
+              "vy",
+              (dy / len) * 4 + (Math.random() - 0.5) * 2
+            );
+            gameArea.append(b);
+            gameState.bossBullets.push(b);
+          }
+        }, 1000);
+      }
 
-  function spawnFormation() {
-    const baseTop = Math.random() * (window.innerHeight - 100);
-    const offsets = [-20, 0, 20];
-    offsets.forEach((offset, i) => {
-      const enemy = $("<img>")
-        .attr("src", "img/enemy.png")
-        .addClass("absolute w-10 h-10 mix-blend-screen opacity-90");
-      enemy.css({
-        left: window.innerWidth + i * 10,
-        top: baseTop + offset,
-      });
-      gameArea.append(enemy);
-      gameState.enemies.push(enemy);
-    });
-  }
+      /* ======== コンボ得点 ======== */
+      function addComboScore() {
+        gameState.combo++;
+        gameState.score += 100 + 20 * (gameState.combo - 1);
+        comboDisplay.text(`Combo: ${gameState.combo} HIT!`);
+        clearTimeout(gameState.comboTimer);
+        gameState.comboTimer = setTimeout(() => {
+          gameState.combo = 0;
+          comboDisplay.text("");
+        }, 2000);
+      }
 
-  function isColliding($a, $b) {
-    const a = $a[0].getBoundingClientRect();
-    const b = $b[0].getBoundingClientRect();
-    return (
-      a.left < b.right &&
-      a.right > b.left &&
-      a.top < b.bottom &&
-      a.bottom > b.top
-    );
-  }
-
-  function spawnBoss() {
-    const boss = $("<img>")
-      .attr("src", "img/boss.png")
-      .addClass("absolute w-32 h-32 mix-blend-screen opacity-90");
-    const top = window.innerHeight / 2 - 64;
-    boss.css({ left: window.innerWidth - 120, top: top });
-    gameArea.append(boss);
-    gameState.bossActive = true;
-    gameState.boss = boss;
-    gameState.bossHp = 30;
-
-    bossFireInterval = setInterval(() => {
-      if (!gameState.bossActive || !boss) {
+      /* ======== ゲームオーバー & 再スタート ======== */
+      function gameOver() {
+        gameState.isGameOver = true;
+        cancelAnimationFrame(animationFrameId);
+        clearInterval(enemySpawnInterval);
         clearInterval(bossFireInterval);
-        return;
+        const scores = (JSON.parse(localStorage.getItem("highScores")) || [])
+          .concat(gameState.score)
+          .sort((a, b) => b - a)
+          .slice(0, 10);
+        localStorage.setItem("highScores", JSON.stringify(scores));
+        $("#ranking").html(
+          "<h2 class='text-xl font-bold mb-2'>Top 10 Scores</h2>" +
+            scores.map((s, i) => `${i + 1}. ${s}`).join("<br>")
+        );
+        $("#gameOverScreen").removeClass("hidden");
       }
-
-      const fromX = boss.position().left;
-      const fromY = boss.position().top + 30;
-
-      for (let i = 0; i < 5; i++) {
-        const bullet = $("<div>").addClass("absolute w-2 h-1 bg-purple-400");
-        bullet.css({ left: fromX, top: fromY });
-
-        const dx = gameState.playerX - fromX;
-        const dy = gameState.playerY - fromY;
-        const length = Math.sqrt(dx * dx + dy * dy);
-        bullet.data("vx", (dx / length) * 4 + (Math.random() - 0.5) * 2);
-        bullet.data("vy", (dy / length) * 4 + (Math.random() - 0.5) * 2);
-
-        gameArea.append(bullet);
-        gameState.bossBullets.push(bullet);
-      }
-    }, 1000);
-  }
-
-  function gameOver() {
-    gameState.isGameOver = true;
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    if (enemySpawnInterval) clearInterval(enemySpawnInterval);
-    if (bossFireInterval) clearInterval(bossFireInterval);
-
-    let scores = JSON.parse(localStorage.getItem("highScores")) || [];
-    scores.push(gameState.score);
-    scores.sort((a, b) => b - a);
-    scores = scores.slice(0, 10);
-    localStorage.setItem("highScores", JSON.stringify(scores));
-
-    lifeDisplay.text("❤️".repeat(gameState.life));
-    scoreDisplay.text(`スコア: ${gameState.score}`);
-    comboDisplay.text("");
-
-    const ranking = document.getElementById("ranking");
-    ranking.innerHTML =
-      "<h2 class='text-xl font-bold mb-2'>【ベスト10】</h2>" +
-      scores.map((s, i) => `${i + 1}位：${s}`).join("<br>");
-
-    document.getElementById("gameOverScreen").classList.remove("hidden");
-  }
-
-  document.getElementById("restartButton").addEventListener("click", () => {
-    document.getElementById("gameOverScreen").classList.add("hidden");
-    $("#gameArea").find("div, img").not("#player").remove();
-    initializeGameState();
-    $("#score").text("スコア: 0").removeClass("hidden");
-    $("#life").text("❤️❤️❤️").removeClass("hidden");
-    $("#combo").text("").removeClass("hidden");
-    startGame();
-  });
-</script>
-</body>
+      $("#restartButton").on("click", () => {
+        $("#gameOverScreen").addClass("hidden");
+        $("#gameArea").find("div, img").not("#player").remove();
+        initializeGameState();
+        $("#barrier").addClass("hidden");
+        $("#score").text("Score: 0");
+        $("#life").text("❤️❤️❤️");
+        $("#combo").text("");
+        player.css({ left: gameState.playerX, top: gameState.playerY });
+        startGame();
+      });
+    </script>
+  </body>
 </html>
