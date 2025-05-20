@@ -23,19 +23,17 @@
           background-position: -1000px 0;
         }
       }
-      /* ★ バリアを少し小さく (64×64) */
+      /* --- バリアを少し小さく（64×64） --- */
       #barrier {
-        width: 64px; /* w-16 相当 */
-        height: 64px; /* h-16 相当 */
-        border-width: 4px;
-        border-color: rgb(96 165 250); /* blue-400 */
+        width: 64px;
+        height: 64px;
+        border: 4px solid rgb(96 165 250);
         border-radius: 9999px;
         opacity: 0.7;
         transition: opacity 0.3s ease;
         pointer-events: none;
       }
       #leftStickArea::before {
-        /* 仮想パッド中央目印 */
         content: "";
         position: absolute;
         top: 50%;
@@ -65,7 +63,7 @@
       src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"
     ></audio>
 
-    <!-- 固定 UI -->
+    <!-- UI -->
     <div
       class="absolute top-4 left-4 text-white text-xl z-[999] pointer-events-none select-none"
     >
@@ -128,12 +126,11 @@
       </button>
     </div>
 
-    <!-- 主要ロジック -->
+    <!-- ===== 主要ロジック ===== -->
     <script>
-      /* ===== 定数 ===== */
-      const BARRIER_OFFSET = 8; /* ★ 中心合わせ用オフセット */
+      const BARRIER_OFFSET = 8; /* 中心合わせ */
 
-      /* ===== グローバル ===== */
+      /* -------- グローバル -------- */
       const gameArea = $("#gameArea"),
         player = $("#player"),
         scoreDisplay = $("#score"),
@@ -142,14 +139,13 @@
         shotSound = $("#shotSound")[0],
         hitSound = $("#hitSound")[0],
         bgm = document.getElementById("bgm");
-
       let bgmStarted = false,
         animationFrameId,
         enemySpawnInterval,
         bossFireInterval,
         gameState;
 
-      /* ==== ゲーム開始 ==== */
+      /* -------- ゲーム開始 -------- */
       function startGameInit() {
         if (bgmStarted) return;
         bgm.volume = 0.6;
@@ -162,7 +158,7 @@
       $(document).on("keydown", startGameInit);
       $("#startScreen").on("click touchstart", startGameInit);
 
-      /* 状態初期化 */
+      /* -------- 状態初期化 -------- */
       function initializeGameState() {
         gameState = {
           playerX: 100,
@@ -193,7 +189,7 @@
         $("#barrier").addClass("hidden");
       };
 
-      /* ==== 入力 & ショット ==== */
+      /* -------- 入力 & ショット -------- */
       const shoot3Way = (x, y) => {
         [0, -2, 2].forEach((dy) => {
           const b = $("<div>")
@@ -240,7 +236,7 @@
         }
       });
 
-      /* ==== 衝突判定 & バリア ==== */
+      /* -------- 衝突判定 & バリア -------- */
       const isColliding = ($a, $b) => {
         if (!$a?.length || !$b?.length) return false;
         const a = $a[0].getBoundingClientRect(),
@@ -264,12 +260,15 @@
         }
       };
 
-      /* ==== 敵生成（AI Lv1-3） ==== */
+      /* -------- 敵生成（AI Lv1-3） -------- */
       function spawnSmartEnemy() {
+        /* ★ 出現確率 1:80% 2:15% 3:5% */
+        const r = Math.random();
+        const aiType = r < 0.8 ? 1 : r < 0.95 ? 2 : 3;
+
         const enemy = $("<img>")
             .attr("src", "img/enemy.png")
             .addClass("absolute w-10 h-10 mix-blend-screen opacity-90"),
-          aiType = Math.floor(Math.random() * 3) + 1,
           startTop = Math.random() * (innerHeight - 60);
         enemy.css({ left: innerWidth, top: startTop });
         gameArea.append(enemy);
@@ -316,7 +315,7 @@
         }, 50);
       }
 
-      /* ==== プレイヤー移動更新 ==== */
+      /* -------- プレイヤー移動 -------- */
       function updatePlayer() {
         const k = gameState.keys,
           s = gameState.playerSpeed;
@@ -340,7 +339,7 @@
           });
       }
 
-      /* ==== ループ内各処理 ==== */
+      /* -------- ループ処理 -------- */
       function processBullets() {
         for (let i = gameState.bullets.length - 1; i >= 0; i--) {
           const b = gameState.bullets[i],
@@ -437,14 +436,14 @@
         }
       }
 
-      /* ==== 被弾処理 ==== */
+      /* -------- 被弾 -------- */
       function damagePlayer() {
         hitSound.play();
         if (--gameState.life <= 0) return gameOver();
         lifeDisplay.text("❤️".repeat(gameState.life));
       }
 
-      /* ==== ボス生成 & ホーミング弾 ==== */
+      /* -------- ボス -------- */
       function spawnBoss() {
         const boss = $("<img>")
           .attr("src", "img/boss.png")
@@ -476,7 +475,7 @@
         }, 1000);
       }
 
-      /* ==== コンボ得点 ==== */
+      /* -------- コンボ -------- */
       function addComboScore() {
         gameState.combo++;
         gameState.score += 100 + 20 * (gameState.combo - 1);
@@ -488,7 +487,7 @@
         }, 2000);
       }
 
-      /* ==== ゲームメインループ ==== */
+      /* -------- メインループ -------- */
       function startGame() {
         player.css({ left: gameState.playerX, top: gameState.playerY });
         lifeDisplay.text("❤️".repeat(gameState.life));
@@ -513,7 +512,7 @@
         loop();
       }
 
-      /* ==== ゲームオーバー & 再スタート ==== */
+      /* -------- ゲームオーバー & 再スタート -------- */
       function gameOver() {
         gameState.isGameOver = true;
         cancelAnimationFrame(animationFrameId);
@@ -531,13 +530,19 @@
         $("#gameOverScreen").removeClass("hidden");
       }
 
-      /* ★ 仮想パッドを残したままクリア → スマホ再スタート対応 */
+      /* ★ スマホ再スタート：仮想パッド子要素も残す */
       $("#restartButton").on("click", () => {
         $("#gameOverScreen").addClass("hidden");
+        /* virtualControls とその子要素は残す */
         $("#gameArea")
-          .find("div, img")
-          .not("#player, #virtualControls, #barrier")
+          .children()
+          .not("#player, #barrier, #virtualControls")
           .remove();
+        $("#gameArea")
+          .find("#virtualControls")
+          .children()
+          .show(); /* 念のため表示 */
+
         initializeGameState();
         $("#barrier").addClass("hidden");
         scoreDisplay.text("Score: 0");
