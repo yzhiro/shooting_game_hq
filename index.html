@@ -145,6 +145,21 @@
         bossFireInterval,
         gameState;
 
+      /* ===== 背景テクスチャの切替 ===== */
+      const bgPatterns = [
+        "https://www.transparenttextures.com/patterns/stardust.png",
+        "https://www.transparenttextures.com/patterns/dark-denim.png",
+        "https://www.transparenttextures.com/patterns/dark-matter.png",
+        "https://www.transparenttextures.com/patterns/debut-dark.png",
+        "https://www.transparenttextures.com/patterns/axiom-pattern.png",
+      ];
+      let bgIndex = -1; // 先頭は未適用
+      function cycleBackground() {
+        bgIndex = (bgIndex + 1) % bgPatterns.length;
+        gameArea.css("background-image", `url('${bgPatterns[bgIndex]}')`);
+        // フェードインしたい場合は以下を有効に
+        gameArea.css({opacity:0}).animate({opacity:1},500);
+      }
       /* -------- ゲーム開始 -------- */
       function startGameInit() {
         if (bgmStarted) return;
@@ -262,10 +277,8 @@
 
       /* -------- 敵生成（AI Lv1-3） -------- */
       function spawnSmartEnemy() {
-        /* ★ 出現確率 1:80% 2:15% 3:5% */
         const r = Math.random();
         const aiType = r < 0.8 ? 1 : r < 0.95 ? 2 : 3;
-
         const enemy = $("<img>")
             .attr("src", "img/enemy.png")
             .addClass("absolute w-10 h-10 mix-blend-screen opacity-90"),
@@ -273,7 +286,6 @@
         enemy.css({ left: innerWidth, top: startTop });
         gameArea.append(enemy);
         gameState.enemies.push(enemy);
-
         /* 敵弾 */
         setTimeout(() => {
           if (!gameState.isGameOver && enemy.parent().length) {
@@ -339,7 +351,7 @@
           });
       }
 
-      /* -------- ループ処理 -------- */
+      /* -------- ループ処理（弾・敵・ボス） -------- */
       function processBullets() {
         for (let i = gameState.bullets.length - 1; i >= 0; i--) {
           const b = gameState.bullets[i],
@@ -352,19 +364,23 @@
           }
         }
       }
+      /* -------- 敵・弾・ボス処理（省略なし） -------- */
       function processEnemies() {
         for (let i = gameState.enemies.length - 1; i >= 0; i--) {
           const e = gameState.enemies[i];
+          /* DOM から消えていたら配列からも除去 */
           if (!e.parent().length) {
             gameState.enemies.splice(i, 1);
             continue;
           }
+          /* プレイヤーと衝突 */
           if (isColliding(player, e)) {
             gameState.barrier ? removeBarrier() : damagePlayer();
             e.remove();
             gameState.enemies.splice(i, 1);
             continue;
           }
+          /* プレイヤー弾と衝突 */
           for (let j = gameState.bullets.length - 1; j >= 0; j--) {
             const b = gameState.bullets[j];
             if (isColliding(b, e)) {
@@ -381,11 +397,13 @@
           }
         }
       }
+
       function processEnemyBullets() {
         for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
           const b = gameState.enemyBullets[i],
-            x = b.position().left - 6;
+            x = b.position().left - 6; // 左へ移動
           b.css("left", x);
+
           if (isColliding(player, b)) {
             gameState.barrier ? removeBarrier() : damagePlayer();
             b.remove();
@@ -393,17 +411,20 @@
             continue;
           }
           if (x < -10) {
+            // 画面外
             b.remove();
             gameState.enemyBullets.splice(i, 1);
           }
         }
       }
+
       function processBossBullets() {
         for (let i = gameState.bossBullets.length - 1; i >= 0; i--) {
           const b = gameState.bossBullets[i],
             x = b.position().left + b.data("vx"),
             y = b.position().top + b.data("vy");
           b.css({ left: x, top: y });
+
           if (isColliding(player, b)) {
             gameState.barrier ? removeBarrier() : damagePlayer();
             b.remove();
@@ -411,11 +432,13 @@
             continue;
           }
           if (x < -10 || y < 0 || y > innerHeight) {
+            // 画面外
             b.remove();
             gameState.bossBullets.splice(i, 1);
           }
         }
       }
+
       function processBossHit() {
         if (!gameState.bossActive) return;
         for (let i = gameState.bullets.length - 1; i >= 0; i--) {
@@ -428,7 +451,7 @@
               gameState.boss.remove();
               gameState.bossActive = false;
               gameState.boss = null;
-              gameState.defeatedEnemies = 0;
+              gameState.defeatedEnemies = 0; // 次のボス条件をリセット
               gameState.score += 10000;
               scoreDisplay.text(`Score: ${gameState.score}`);
             }
@@ -445,6 +468,7 @@
 
       /* -------- ボス -------- */
       function spawnBoss() {
+        cycleBackground(); // ★ 背景を次パターンへ
         const boss = $("<img>")
           .attr("src", "img/boss.png")
           .addClass("absolute w-32 h-32 mix-blend-screen opacity-90")
@@ -474,7 +498,7 @@
           }
         }, 1000);
       }
-
+      <!-- ========== gradius.html  Part 5 / 5 ========== -->
       /* -------- コンボ -------- */
       function addComboScore() {
         gameState.combo++;
@@ -489,6 +513,7 @@
 
       /* -------- メインループ -------- */
       function startGame() {
+        cycleBackground(); // ★ ゲーム開始時も初期パターンを適用
         player.css({ left: gameState.playerX, top: gameState.playerY });
         lifeDisplay.text("❤️".repeat(gameState.life));
         scoreDisplay.text("Score: 0");
@@ -530,19 +555,13 @@
         $("#gameOverScreen").removeClass("hidden");
       }
 
-      /* ★ スマホ再スタート：仮想パッド子要素も残す */
       $("#restartButton").on("click", () => {
         $("#gameOverScreen").addClass("hidden");
-        /* virtualControls とその子要素は残す */
         $("#gameArea")
           .children()
-          .not("#player, #barrier, #virtualControls")
+          .not("#player,#barrier,#virtualControls")
           .remove();
-        $("#gameArea")
-          .find("#virtualControls")
-          .children()
-          .show(); /* 念のため表示 */
-
+        $("#gameArea").find("#virtualControls").children().show();
         initializeGameState();
         $("#barrier").addClass("hidden");
         scoreDisplay.text("Score: 0");
