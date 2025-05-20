@@ -1,4 +1,3 @@
-<!-- ========== Part 1 / 5 ========== -->
 <!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -24,10 +23,19 @@
           background-position: -1000px 0;
         }
       }
+      /* ★ バリアを少し小さく (64×64) */
       #barrier {
+        width: 64px; /* w-16 相当 */
+        height: 64px; /* h-16 相当 */
+        border-width: 4px;
+        border-color: rgb(96 165 250); /* blue-400 */
+        border-radius: 9999px;
+        opacity: 0.7;
         transition: opacity 0.3s ease;
+        pointer-events: none;
       }
       #leftStickArea::before {
+        /* 仮想パッド中央目印 */
         content: "";
         position: absolute;
         top: 50%;
@@ -45,7 +53,6 @@
     </style>
   </head>
   <body class="m-0 p-0 overflow-hidden bg-black" ontouchstart="">
-    <!-- ========== Part 2 / 5 ========== -->
     <script>
       document.addEventListener("gesturestart", (e) => e.preventDefault());
     </script>
@@ -86,10 +93,7 @@
         src="img/player.png"
         class="absolute w-12 h-12 mix-blend-screen opacity-90"
       />
-      <div
-        id="barrier"
-        class="absolute w-20 h-20 rounded-full border-4 border-blue-400 opacity-70 hidden z-[80] pointer-events-none"
-      ></div>
+      <div id="barrier" class="absolute hidden z-[80]"></div>
 
       <!-- 仮想パッド -->
       <div
@@ -108,7 +112,7 @@
         </div>
       </div>
     </div>
-    <!-- ========== Part 3 / 5 ========== -->
+
     <!-- ゲームオーバー -->
     <div
       id="gameOverScreen"
@@ -126,6 +130,9 @@
 
     <!-- 主要ロジック -->
     <script>
+      /* ===== 定数 ===== */
+      const BARRIER_OFFSET = 8; /* ★ 中心合わせ用オフセット */
+
       /* ===== グローバル ===== */
       const gameArea = $("#gameArea"),
         player = $("#player"),
@@ -208,6 +215,7 @@
           setTimeout(() => (gameState.canShoot = true), 200);
         }
       });
+
       /* 仮想パッド */
       $("#leftStickArea")
         .on("touchstart touchmove", (e) => {
@@ -249,10 +257,13 @@
           gameState.barrier = true;
           $("#barrier")
             .removeClass("hidden")
-            .css({ left: gameState.playerX - 16, top: gameState.playerY - 16 });
+            .css({
+              left: gameState.playerX - BARRIER_OFFSET,
+              top: gameState.playerY - BARRIER_OFFSET,
+            });
         }
       };
-      <!-- ========== Part 4 / 5 ========== -->
+
       /* ==== 敵生成（AI Lv1-3） ==== */
       function spawnSmartEnemy() {
         const enemy = $("<img>")
@@ -301,7 +312,7 @@
             );
             if (danger) top += top > 10 ? -2 : 2;
           }
-          enemy.css({ left, top }); /* ← 修正済み */
+          enemy.css({ left, top });
         }, 50);
       }
 
@@ -324,8 +335,8 @@
         player.css({ left: gameState.playerX, top: gameState.playerY });
         if (gameState.barrier)
           $("#barrier").css({
-            left: gameState.playerX - 16,
-            top: gameState.playerY - 16,
+            left: gameState.playerX - BARRIER_OFFSET,
+            top: gameState.playerY - BARRIER_OFFSET,
           });
       }
 
@@ -519,9 +530,14 @@
         );
         $("#gameOverScreen").removeClass("hidden");
       }
+
+      /* ★ 仮想パッドを残したままクリア → スマホ再スタート対応 */
       $("#restartButton").on("click", () => {
         $("#gameOverScreen").addClass("hidden");
-        $("#gameArea").find("div, img").not("#player").remove();
+        $("#gameArea")
+          .find("div, img")
+          .not("#player, #virtualControls, #barrier")
+          .remove();
         initializeGameState();
         $("#barrier").addClass("hidden");
         scoreDisplay.text("Score: 0");
