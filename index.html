@@ -3,13 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <title>Gradius-style Game</title>
+    <!-- 画面をガッチリ固定するため viewport-fit と user-scalable=no を明示 -->
     <meta
       name="viewport"
-      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"
+      content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"
     />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+      /* ===== モバイルでのバウンス・スクロール・ズームを完全に無効化 ===== */
+      html,
+      body {
+        overscroll-behavior: none; /* スクロール時のバウンス無効化 */
+        touch-action: none;        /* ネイティブのパン／ズーム操作を抑止 */
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        position: fixed;          /* アドレスバーの開閉で揺れないよう画面を固定 */
+      }
+
       .bg-space {
         background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
         background-size: cover;
@@ -52,6 +65,15 @@
   </head>
   <body class="m-0 p-0 overflow-hidden bg-black" ontouchstart="">
     <script>
+      /* ===== グローバルに touchmove を抑止 ===== */
+      document.addEventListener(
+        "touchmove",
+        (e) => {
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+      /* ピンチズームの開始を抑止（iOS Safari 対策） */
       document.addEventListener("gesturestart", (e) => e.preventDefault());
     </script>
 
@@ -158,8 +180,9 @@
         bgIndex = (bgIndex + 1) % bgPatterns.length;
         gameArea.css("background-image", `url('${bgPatterns[bgIndex]}')`);
         // フェードインしたい場合は以下を有効に
-        gameArea.css({opacity:0}).animate({opacity:1},500);
+        gameArea.css({ opacity: 0 }).animate({ opacity: 1 }, 500);
       }
+
       /* -------- ゲーム開始 -------- */
       function startGameInit() {
         if (bgmStarted) return;
@@ -230,6 +253,7 @@
       /* 仮想パッド */
       $("#leftStickArea")
         .on("touchstart touchmove", (e) => {
+          e.preventDefault(); // ★ ネイティブスクロール抑止
           const t = e.originalEvent.touches[0],
             c = $(e.currentTarget).offset(),
             dx = t.pageX - (c.left + 64),
@@ -241,7 +265,8 @@
           gameState.keys.ArrowRight = dx > th;
         })
         .on("touchend", () => (gameState.keys = {}));
-      $("#shotButton").on("touchstart", () => {
+      $("#shotButton").on("touchstart", (e) => {
+        e.preventDefault(); // ★ ダブルタップズーム抑止
         if (gameState.canShoot && !gameState.isGameOver) {
           gameState.canShoot = false;
           shoot3Way(gameState.playerX, gameState.playerY);
@@ -498,7 +523,7 @@
           }
         }, 1000);
       }
-      <!-- ========== gradius.html  Part 5 / 5 ========== -->
+      // <!-- ========== gradius.html  Part 5 / 5 ========== -->
       /* -------- コンボ -------- */
       function addComboScore() {
         gameState.combo++;
