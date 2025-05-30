@@ -15,12 +15,12 @@
       html,
       body {
         overscroll-behavior: none; /* スクロール時のバウンス無効化 */
-        touch-action: none;        /* ネイティブのパン／ズーム操作を抑止 */
+        touch-action: none; /* ネイティブのパン／ズーム操作を抑止 */
         margin: 0;
         padding: 0;
         width: 100%;
         height: 100%;
-        position: fixed;          /* アドレスバーの開閉で揺れないよう画面を固定 */
+        position: fixed; /* アドレスバーの開閉で揺れないよう画面を固定 */
       }
 
       .bg-space {
@@ -485,12 +485,21 @@
       }
 
       /* -------- 被弾 -------- */
-      function damagePlayer() {
-        hitSound.play();
-        if (--gameState.life <= 0) return gameOver();
-        lifeDisplay.text("❤️".repeat(gameState.life));
-      }
+  function damagePlayer() {
+  hitSound.play();
 
+  // 残機を 1 減らす
+  gameState.life--;
+
+  // ★ 0 になった瞬間にハートを消してから Game Over へ
+  if (gameState.life <= 0) {
+    lifeDisplay.text("");        // ← この 1 行を追加
+    return gameOver();
+  }
+
+  // まだ残機がある場合だけ表示を更新
+  lifeDisplay.text("❤️".repeat(gameState.life));
+}
       /* -------- ボス -------- */
       function spawnBoss() {
         cycleBackground(); // ★ 背景を次パターンへ
