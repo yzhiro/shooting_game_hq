@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -138,6 +139,25 @@
       .delay-1 { animation-delay: 0.1s; opacity: 0; }
       .delay-2 { animation-delay: 0.25s; opacity: 0; }
       .delay-3 { animation-delay: 0.4s; opacity: 0; }
+
+      /* ===== 横画面固定（スマホ向け回転案内） ===== */
+      #rotateNotice {
+        display: none;            /* 既定は非表示 */
+        flex-direction: column;
+      }
+      .rotate-phone {
+        font-size: 4rem;
+        line-height: 1;
+        animation: rotateHint 1.8s ease-in-out infinite;
+      }
+      @keyframes rotateHint {
+        0%, 35%   { transform: rotate(0deg); }
+        65%, 100% { transform: rotate(90deg); }
+      }
+      /* タッチ端末が縦向きのときだけ案内を表示してゲームを覆う */
+      @media (orientation: portrait) and (pointer: coarse) {
+        #rotateNotice { display: flex !important; }
+      }
     </style>
   </head>
   <body class="m-0 p-0 overflow-hidden bg-black" ontouchstart="">
@@ -145,6 +165,14 @@
       document.addEventListener("touchmove", (e) => { e.preventDefault(); }, { passive: false });
       document.addEventListener("gesturestart", (e) => e.preventDefault());
     </script>
+
+    <!-- ===== 縦向き時の回転案内（スマホで横画面を促す） ===== -->
+    <div id="rotateNotice" class="fixed inset-0 bg-black text-white items-center justify-center text-center px-8 z-[2000]">
+      <div class="rotate-phone mb-6">📱</div>
+      <div style="font-family:'Orbitron',sans-serif;" class="text-2xl font-black mb-3 tracking-wider">ROTATE DEVICE</div>
+      <p class="text-base opacity-70">端末を横向きにしてください</p>
+      <p class="text-xs opacity-40 mt-4" style="font-family:'Orbitron',sans-serif;">LANDSCAPE MODE REQUIRED</p>
+    </div>
 
     <!-- BGM / SE -->
     <audio id="bgm" src="bgm/02 Start ~ Main BGM Lv 0.mp3" loop></audio>
@@ -298,6 +326,23 @@
 
       function getDiff() { return DIFFICULTY[selectedDifficulty]; }
 
+      /* ===== 横画面固定 ===== */
+      async function lockLandscape() {
+        // 1) フルスクリーン化（Android Chrome 等では方向ロックの前提）
+        try {
+          const el = document.documentElement;
+          if (el.requestFullscreen)            await el.requestFullscreen();
+          else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+        } catch (_) { /* 失敗しても回転案内でカバー */ }
+
+        // 2) 画面方向を横にロック（iOS Safari は非対応 → 回転案内でカバー）
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock("landscape");
+          }
+        } catch (_) { /* 非対応・拒否された場合は無視 */ }
+      }
+
       /* ===== 背景テクスチャの切替 ===== */
       const bgPatterns = [
         "https://www.transparenttextures.com/patterns/stardust.png",
@@ -339,6 +384,8 @@
         e.preventDefault();
         e.stopPropagation();
         selectedDifficulty = $(this).data("diff");
+        // ★ ユーザー操作のタイミングで横画面ロックを試みる
+        lockLandscape();
         // イベント解除
         $(document).off("keydown.start");
         $("#startScreen").off("click.bg touchstart.bg");
