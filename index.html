@@ -174,7 +174,11 @@
   </head>
   <body class="m-0 p-0 overflow-hidden bg-black" ontouchstart="">
     <script>
-      document.addEventListener("touchmove", (e) => { e.preventDefault(); }, { passive: false });
+      document.addEventListener("touchmove", (e) => {
+        // メニュー画面（スタート/難易度選択・ゲームオーバー）はスクロールを許可
+        if (e.target.closest && e.target.closest("#startScreen, #gameOverScreen")) return;
+        e.preventDefault();
+      }, { passive: false });
       document.addEventListener("gesturestart", (e) => e.preventDefault());
     </script>
 
@@ -200,7 +204,8 @@
     </div>
 
     <!-- スタート＆難易度選択画面 -->
-    <div id="startScreen" class="fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-[1000]">
+    <div id="startScreen" class="fixed inset-0 bg-black text-white z-[1000]" style="overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y;">
+      <div class="min-h-full flex flex-col items-center justify-center" style="padding:18px 8px; box-sizing:border-box;">
       <!-- タイトル部分 -->
       <div id="titleSection" class="flex flex-col items-center">
         <h1 style="font-family:'Orbitron',sans-serif;" class="text-3xl md:text-4xl font-black mb-3 tracking-wider">GRADIUS-STYLE</h1>
@@ -240,6 +245,7 @@
           </button>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- ゲームエリア -->
@@ -255,11 +261,13 @@
     </div>
 
     <!-- ゲームオーバー -->
-    <div id="gameOverScreen" class="hidden fixed inset-0 bg-black bg-opacity-80 text-white flex flex-col items-center justify-center z-50">
-      <h1 style="font-family:'Orbitron',sans-serif;" class="text-3xl font-bold mb-4">GAME OVER</h1>
-      <div id="finalDiff" class="mb-2 text-sm opacity-60" style="font-family:'Orbitron',sans-serif;"></div>
-      <div id="ranking" class="mb-6 text-left"></div>
-      <button id="restartButton" class="bg-white text-black font-bold py-2 px-6 rounded" style="font-family:'Orbitron',sans-serif; font-size:0.9rem;">PLAY AGAIN</button>
+    <div id="gameOverScreen" class="hidden fixed inset-0 bg-black bg-opacity-80 text-white z-50" style="overflow-y:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y;">
+      <div class="min-h-full flex flex-col items-center justify-center" style="padding:18px 8px; box-sizing:border-box;">
+        <h1 style="font-family:'Orbitron',sans-serif;" class="text-3xl font-bold mb-4">GAME OVER</h1>
+        <div id="finalDiff" class="mb-2 text-sm opacity-60" style="font-family:'Orbitron',sans-serif;"></div>
+        <div id="ranking" class="mb-6 text-left"></div>
+        <button id="restartButton" class="bg-white text-black font-bold py-2 px-6 rounded" style="font-family:'Orbitron',sans-serif; font-size:0.9rem;">PLAY AGAIN</button>
+      </div>
     </div>
 
     <!-- ===== 主要ロジック ===== -->
