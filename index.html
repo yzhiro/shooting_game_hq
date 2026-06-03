@@ -434,23 +434,24 @@
 
       // 最初のタップ/キー → 難易度選択画面へ
       $(document).on("keydown.start", showDifficultySelect);
-      $("#tapToStart").on("click touchstart", showDifficultySelect);
-      $("#startScreen").on("click.bg touchstart.bg", function(e) {
+      $("#tapToStart").on("click", showDifficultySelect);
+      $("#startScreen").on("click.bg", function(e) {
         // 難易度ボタンのクリックは除外
         if ($(e.target).closest('.diff-btn').length) return;
         if ($("#titleSection").is(":visible")) showDifficultySelect();
       });
 
       // 難易度ボタンをクリック → ゲーム開始
-      $(".diff-btn").on("click touchstart", function(e) {
+      $(".diff-btn").on("click", function(e) {
         e.preventDefault();
         e.stopPropagation();
-        selectedDifficulty = $(this).data("diff");
+        // data-diff を確実に取得（内側のspanをタップしてもボタン本体から読む）
+        selectedDifficulty = e.currentTarget.getAttribute("data-diff") || "normal";
         // ★ ユーザー操作のタイミングで横画面ロックを試みる
         lockLandscape();
         // イベント解除
         $(document).off("keydown.start");
-        $("#startScreen").off("click.bg touchstart.bg");
+        $("#startScreen").off("click.bg");
         $("#startScreen").addClass("hidden");
         initializeGameState();
         startGame();
