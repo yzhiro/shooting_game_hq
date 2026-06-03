@@ -63,16 +63,16 @@
       /* ===== 難易度選択画面 ===== */
       .diff-btn {
         position: relative;
-        width: 250px;
-        padding: 11px 16px;
+        width: 210px;
+        padding: 10px 12px;
         border: 2px solid rgba(255,255,255,0.15);
         border-radius: 8px;
         background: rgba(255,255,255,0.04);
         color: #fff;
         font-family: 'Orbitron', sans-serif;
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 700;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
         cursor: pointer;
         transition: all 0.25s ease;
         overflow: hidden;
@@ -122,11 +122,11 @@
       .diff-badge {
         display: inline-block;
         font-family: 'Orbitron', sans-serif;
-        font-size: 0.6rem;
-        padding: 2px 8px;
+        font-size: 0.58rem;
+        padding: 2px 6px;
         border-radius: 4px;
-        letter-spacing: 0.1em;
-        margin-right: 8px;
+        letter-spacing: 0.05em;
+        margin-right: 6px;
         vertical-align: middle;
       }
 
@@ -200,7 +200,7 @@
     </div>
 
     <!-- スタート＆難易度選択画面 -->
-    <div id="startScreen" class="fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-50">
+    <div id="startScreen" class="fixed inset-0 bg-black text-white flex flex-col items-center justify-center z-[1000]">
       <!-- タイトル部分 -->
       <div id="titleSection" class="flex flex-col items-center">
         <h1 style="font-family:'Orbitron',sans-serif;" class="text-3xl md:text-4xl font-black mb-3 tracking-wider">GRADIUS-STYLE</h1>
@@ -210,9 +210,9 @@
 
       <!-- 難易度選択部分（最初は非表示） -->
       <div id="difficultySection" class="hidden flex flex-col items-center">
-        <h2 style="font-family:'Orbitron',sans-serif;" class="text-base tracking-widest opacity-60 mb-5">SELECT DIFFICULTY</h2>
+        <h2 style="font-family:'Orbitron',sans-serif;" class="text-base tracking-widest opacity-60 mb-4">SELECT DIFFICULTY</h2>
 
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-wrap justify-center gap-3" style="width:min(94vw,660px);">
           <button class="diff-btn beginner animate-fade-in-up delay-1" data-diff="beginner">
             <span class="diff-badge" style="background:rgba(45,212,191,0.15); color:#2dd4bf;">★☆☆☆☆</span>
             BEGINNER
